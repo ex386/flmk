@@ -1,5 +1,4 @@
 name: build
-
 on:
   push:
     branches: [ main ]
@@ -40,23 +39,25 @@ jobs:
           if [ -n "$KS_B64" ]; then
             echo "$KS_B64" | base64 -d > "$GITHUB_WORKSPACE/release.jks"
             echo "KS_FILE=$GITHUB_WORKSPACE/release.jks" >> "$GITHUB_ENV"
-            echo "使用仓库 secret 中的固定证书"
+            echo "使用仓库 secret 中的证书"
           else
-            echo "KEYSTORE_BASE64 未配置，改用 CI 临时证书签名（可安装，但每次构建证书不同）"
-            keytool -genkeypair -keystore "$GITHUB_WORKSPACE/release.jks" \
-              -alias fuumod -keyalg RSA -keysize 2048 -validity 10000 \
-              -storepass fuumod123 -keypass fuumod123 \
-              -dname "CN=FuuMod, OU=Lab, O=Lab, L=NA, ST=NA, C=CN" -noprompt
-            echo "KS_FILE=$GITHUB_WORKSPACE/release.jks" >> "$GITHUB_ENV"
-            echo "KS_PASS=fuumod123" >> "$GITHUB_ENV"
-            echo "KEY_ALIAS=fuumod" >> "$GITHUB_ENV"
-            echo "KEY_PASS=fuumod123" >> "$GITHUB_ENV"
+            echo "使用仓库内置固定证书 keystore/fuumod.jks（签名固定，可覆盖安装）"
           fi
+          ls -l "$GITHUB_WORKSPACE/keystore" || true
 
       - name: Build release
         run: gradle assembleRelease --no-daemon --stacktrace
+
+      - name: Show APK signature
+        run: |
+          APK="$(ls app/build/outputs/apk/release/*.apk | head -1)"
+          echo "APK=$APK"
+          BT="$(ls -d "${ANDROID_SDK_ROOT:-$ANDROID_HOME}"/build-tools/* 2>/dev/null | sort -V | tail -1)"
+          echo "build-tools=$BT"
+          "$BT/apksigner" verify --print-certs "$APK" || true
 
       - uses: actions/upload-artifact@v4
         with:
           name: fuumod-apk
           path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error

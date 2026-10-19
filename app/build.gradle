@@ -2,7 +2,17 @@ plugins {
     id 'com.android.application'
 }
 
-def ksFile = System.getenv("KS_FILE")
+def envOr = { String name, String defVal ->
+    def v = System.getenv(name)
+    return (v != null && !v.trim().isEmpty()) ? v.trim() : defVal
+}
+def envKs = System.getenv("KS_FILE")
+def repoKs = rootProject.file("keystore/fuumod.jks")
+def ksFile = (envKs != null && !envKs.trim().isEmpty()) ? envKs.trim() : (repoKs.exists() ? repoKs.absolutePath : null)
+def ksStorePass = envOr("KS_PASS", "fuumod123")
+def ksAliasName = envOr("KEY_ALIAS", "fuumod")
+def ksKeyPass = envOr("KEY_PASS", "fuumod123")
+logger.lifecycle("FuuMod signing: " + (ksFile ?: "NONE"))
 
 android {
     namespace 'com.lab.fuumod'
@@ -29,9 +39,9 @@ android {
         if (ksFile) {
             rel {
                 storeFile file(ksFile)
-                storePassword System.getenv("KS_PASS")
-                keyAlias System.getenv("KEY_ALIAS")
-                keyPassword System.getenv("KEY_PASS")
+                storePassword ksStorePass
+                keyAlias ksAliasName
+                keyPassword ksKeyPass
             }
         }
     }

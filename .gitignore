@@ -1,8 +1,10 @@
 node_modules/
-build/
+/app/build/
 .gradle/
 *.iml
 .DS_Store
 local.properties
 *.jks
 *.keystore
+# 固定签名证书：提交进仓库，保证每次 Action 构建的 APK 签名一致、可覆盖安装
+!keystore/fuumod.jks
