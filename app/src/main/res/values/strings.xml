@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FuuMod</string>
+    <string name="mod_desc">device profile spoof + identity read tracer</string>
+</resources>
