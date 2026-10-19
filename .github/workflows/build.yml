@@ -57,6 +57,25 @@ jobs:
             echo "build-tools=$BT" | tee -a sig.txt
             "$BT/apksigner" verify --print-certs "$APK" 2>&1 | tee -a sig.txt || true
           fi
+      - name: Publish APK to branch
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          APK="$(ls app/build/outputs/apk/release/*.apk 2>/dev/null | head -1)"
+          [ -n "$APK" ] || { echo "no apk produced"; exit 1; }
+          rm -rf /tmp/apkout && mkdir -p /tmp/apkout
+          cp "$APK" /tmp/apkout/FuuMod.apk
+          cd /tmp/apkout
+          sha256sum FuuMod.apk > FuuMod.apk.sha256
+          ls -l
+          git init -q .
+          git config user.name "ci"
+          git config user.email "ci@users.noreply.github.com"
+          git checkout -q -b apk
+          git add -f FuuMod.apk FuuMod.apk.sha256
+          git commit -q -m "ci: apk ${GITHUB_SHA:0:7} [skip ci]" || true
+          git push -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" apk
       - name: Publish build log
         if: always()
         env:
