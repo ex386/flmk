@@ -40,8 +40,17 @@ jobs:
           if [ -n "$KS_B64" ]; then
             echo "$KS_B64" | base64 -d > "$GITHUB_WORKSPACE/release.jks"
             echo "KS_FILE=$GITHUB_WORKSPACE/release.jks" >> "$GITHUB_ENV"
+            echo "使用仓库 secret 中的固定证书"
           else
-            echo "KEYSTORE_BASE64 未配置，将构建未签名 release APK"
+            echo "KEYSTORE_BASE64 未配置，改用 CI 临时证书签名（可安装，但每次构建证书不同）"
+            keytool -genkeypair -e -keystore "$GITHUB_WORKSPACE/release.jks" \
+              -alias fuumod -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass fuumod123 -keypass fuumod123 \
+              -dname "CN=FuuMod, OU=Lab, O=Lab, L=NA, ST=NA, C=CN" > /dev/null 2>&1
+            echo "KS_FILE=$GITHUB_WORKSPACE/release.jks" >> "$GITHUB_ENV"
+            echo "KS_PASS=fuumod123" >> "$GITHUB_ENV"
+            echo "KEY_ALIAS=fuumod" >> "$GITHUB_ENV"
+            echo "KEY_PASS=fuumod123" >> "$GITHUB_ENV"
           fi
 
       - name: Build release
