@@ -3,7 +3,6 @@ on:
   push:
     branches: [ main ]
   workflow_dispatch:
-
 jobs:
   apk:
     runs-on: ubuntu-latest
@@ -16,12 +15,10 @@ jobs:
       KEY_PASS: ${{ secrets.KEY_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-
       - name: Ensure SDK platform + licenses
         run: |
           SDK="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
@@ -31,11 +28,9 @@ jobs:
           yes | "$SM" --licenses > /dev/null 2>&1 || true
           "$SM" "platforms;android-34" "build-tools;34.0.0" "platform-tools" > /dev/null 2>&1 || true
           ls "$SDK/platforms" || true
-
       - uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: '8.7'
-
       - name: Prepare keystore
         run: |
           if [ -n "$KS_B64" ]; then
@@ -46,34 +41,43 @@ jobs:
             echo "使用仓库内置固定证书 keystore/fuumod.jks（签名固定，可覆盖安装）"
           fi
           ls -l "$GITHUB_WORKSPACE/keystore" || true
-
       - name: Build release
         run: |
           set -o pipefail
           gradle assembleRelease --no-daemon --stacktrace 2>&1 | tee build.log
-
-      - name: Publish build log on failure
-        if: failure()
+      - name: Check APK + signature
+        if: always()
+        run: |
+          : > sig.txt
+          APK="$(ls app/build/outputs/apk/release/*.apk 2>/dev/null | head -1)"
+          echo "APK=$APK" | tee -a sig.txt
+          ls -lh app/build/outputs/apk/release/ 2>/dev/null | tee -a sig.txt || true
+          if [ -n "$APK" ]; then
+            BT="$(ls -d "${ANDROID_SDK_ROOT:-$ANDROID_HOME}"/build-tools/* 2>/dev/null | sort -V | tail -1)"
+            echo "build-tools=$BT" | tee -a sig.txt
+            "$BT/apksigner" verify --print-certs "$APK" 2>&1 | tee -a sig.txt || true
+          fi
+      - name: Publish build log
+        if: always()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "ci"
           git config user.email "ci@users.noreply.github.com"
-          tail -c 60000 build.log > build-log.txt || echo "no build.log" > build-log.txt
+          {
+            echo "=== run $GITHUB_RUN_ID / ${GITHUB_SHA:0:7} ==="
+            echo "--- build.log (tail 60000) ---"
+            tail -c 60000 build.log 2>/dev/null || echo "no build.log"
+            echo
+            echo "--- sig.txt ---"
+            cat sig.txt 2>/dev/null || echo "no sig.txt"
+          } > build-log.txt
           git checkout -q -B ci-log
           git add -f build-log.txt
           git commit -q -m "ci: build log [skip ci]" || true
           git push -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" ci-log || true
-
-      - name: Show APK signature
-        run: |
-          APK="$(ls app/build/outputs/apk/release/*.apk | head -1)"
-          echo "APK=$APK"
-          BT="$(ls -d "${ANDROID_SDK_ROOT:-$ANDROID_HOME}"/build-tools/* 2>/dev/null | sort -V | tail -1)"
-          echo "build-tools=$BT"
-          "$BT/apksigner" verify --print-certs "$APK" || true
-
       - uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: fuumod-apk
           path: app/build/outputs/apk/release/*.apk
