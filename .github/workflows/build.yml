@@ -21,10 +21,15 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - uses: android-actions/setup-android@v3
-
-      - name: Install SDK platform
-        run: sdkmanager "platforms;android-34" "build-tools;34.0.0" > /dev/null
+      - name: Ensure SDK platform + licenses
+        run: |
+          SDK="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          echo "SDK=$SDK"
+          SM="$(find "$SDK" -name sdkmanager -type f 2>/dev/null | head -1)"
+          echo "sdkmanager=$SM"
+          yes | "$SM" --licenses > /dev/null 2>&1 || true
+          "$SM" "platforms;android-34" "build-tools;34.0.0" "platform-tools" > /dev/null 2>&1 || true
+          ls "$SDK/platforms" || true
 
       - uses: gradle/actions/setup-gradle@v3
         with:
