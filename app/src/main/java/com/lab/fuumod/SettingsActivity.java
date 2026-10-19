@@ -143,8 +143,8 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     private void writeProfile(Uri uri) {
-        String json = collectProfile().toJson().toString(2);
         try (OutputStream os = getContentResolver().openOutputStream(uri, "wt")) {
+            String json = collectProfile().toJson().toString(2);
             if (os == null) throw new IllegalStateException("openOutputStream 返回 null");
             os.write(json.getBytes(StandardCharsets.UTF_8));
             os.flush();
