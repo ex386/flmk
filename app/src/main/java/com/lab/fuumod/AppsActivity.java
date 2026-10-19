@@ -100,12 +100,14 @@ public class AppsActivity extends AppCompatActivity {
         bar.setPadding(24, 12, 24, 24);
         Button imp = new Button(this);
         imp.setText("导入文件");
+        Button cfg = new Button(this);
+        cfg.setText("设置");
         Button clr = new Button(this);
         clr.setText("清空列表");
         bar.addView(imp, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        bar.addView(cfg, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
         bar.addView(clr, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
         root.addView(bar);
-
         setContentView(root);
 
         imp.setOnClickListener(v -> {
@@ -114,6 +116,8 @@ public class AppsActivity extends AppCompatActivity {
                     ? new String[]{"text/*", "application/octet-stream"}
                     : new String[]{"video/*"});
         });
+
+        cfg.setOnClickListener(v -> startActivity(new Intent(this, SettingsActivity.class)));
 
         clr.setOnClickListener(v -> {
             if (data.isEmpty()) return;

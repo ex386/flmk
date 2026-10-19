@@ -12,7 +12,11 @@
         <meta-data android:name="xposedminversion" android:value="82" />
         <meta-data android:name="xposedscope" android:resource="@array/scope" />
 
-        <activity android:name=".SettingsActivity" android:exported="true">
+        <!-- 小说/视频库：桌面图标、侧边栏、桌面快捷方式的唯一入口 -->
+        <activity
+            android:name=".AppsActivity"
+            android:exported="true"
+            android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -20,7 +24,9 @@
         </activity>
 
         <activity android:name=".Gate" android:exported="false" />
-        <activity android:name=".AppsActivity" android:exported="false" />
+
+        <!-- 设置降级为库内二级页，不再出现在桌面/侧边栏 -->
+        <activity android:name=".SettingsActivity" android:exported="false" />
         <activity android:name=".ReaderActivity" android:exported="false" />
         <activity android:name=".VideoActivity" android:exported="false" />
     </application>
